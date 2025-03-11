@@ -6,8 +6,20 @@ const axios = require('axios');
 const app = express();
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const apiKey = process.env.GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(apiKey);
+
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash",
+});
+
+const generationConfig = {
+  temperature: 1,
+  topP: 0.95,
+  topK: 40,
+  maxOutputTokens: 8192,
+  responseMimeType: "text/plain",
+};
 
 app.post('/webhook', (req, res) => {
     console.log('Received request:', req.body);
@@ -20,41 +32,30 @@ app.post('/webhook', (req, res) => {
     }
 
     // Example logic to create a summary
-    const summary = generateExecutiveSummary(transcript); // Replace with actual summary logic
-
-    console.log('Generated summary:', summary);
-    res.json({ summary });
-});
-
-function generateExecutiveSummary(transcript) {
-    const url = "https://proposal-automation.vercel.app/webhook"; // Your Gemini endpoint
-    const payload = {
-        prompt: transcript // Use the transcript as the prompt
-    };
-
-    const options = {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-
-    axios.post(url, payload, options)
-        .then(response => {
-            console.log('Response Code:', response.status);
-            console.log('Response Text:', response.data);
-
-            if (response.status !== 200) {
-                throw new Error('Failed to generate executive summary: ' + response.data);
-            }
-
-            const summary = response.data;
-            console.log('Executive Summary:', JSON.stringify(summary)); // Log the summary
-            return summary;
+    generateExecutiveSummary(transcript)
+        .then(summary => {
+            console.log('Generated summary:', summary);
+            res.json({ summary });
         })
         .catch(error => {
-            console.log('Error sending transcript:', error.message);
-            throw new Error("Failed to send transcript to Gemini");
+            console.error("Error generating executive summary:", error);
+            res.status(500).json({ error: "Failed to generate executive summary" });
         });
+});
+
+async function generateExecutiveSummary(transcript) {
+  try {
+    const chatSession = model.startChat({
+      generationConfig,
+      history: [],
+    });
+
+    const result = await chatSession.sendMessage(transcript);
+    return result.response.text();
+  } catch (error) {
+    console.error("Error during API call:", error);
+    throw error;
+  }
 }
 
 function processTranscript() {
@@ -104,3 +105,4 @@ function extractConclusion(sentences) {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
