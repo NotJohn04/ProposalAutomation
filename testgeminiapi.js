@@ -8,18 +8,23 @@ app.use(express.json());
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-app.post('/webhook', async (req, res) => {
-  const { data } = req.body; // Adjust based on your webhook payload
-  const prompt = `Create a summary based on the following data: ${data}`;
+app.post('/webhook', (req, res) => {
+    const { transcript } = req.body;
+    
+    if (!transcript) {
+        return res.status(400).json({ summary: "Please provide the data you would like me to summarize. I need the data to create a summary." });
+    }
 
-  try {
-    const result = await model.generateContent(prompt);
-    res.json({ summary: result.response.text() });
-  } catch (error) {
-    console.error("Error generating content:", error);
-    res.status(500).json({ error: "Error generating content" });
-  }
+    // Example logic to create a summary
+    const summary = generateSummary(transcript); // Replace with actual summary logic
+
+    res.json({ summary });
 });
+
+function generateSummary(transcript) {
+    // Implement your summary generation logic here
+    return "This is a generated summary based on the transcript.";
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
