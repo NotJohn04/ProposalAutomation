@@ -1,6 +1,7 @@
 const express = require('express');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
+const axios = require('axios');
 
 const app = express();
 app.use(express.json());
@@ -28,31 +29,28 @@ function generateExecutiveSummary(transcript) {
     };
 
     const options = {
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true // Allows you to capture the full response even on error
+        headers: {
+            'Content-Type': 'application/json'
+        }
     };
 
-    try {
-        const response = UrlFetchApp.fetch(url, options);
-        const responseCode = response.getResponseCode();
-        const responseText = response.getContentText();
+    axios.post(url, payload, options)
+        .then(response => {
+            console.log('Response Code:', response.status);
+            console.log('Response Text:', response.data);
 
-        console.log('Response Code: ' + responseCode);
-        console.log('Response Text: ' + responseText);
+            if (response.status !== 200) {
+                throw new Error('Failed to generate executive summary: ' + response.data);
+            }
 
-        if (responseCode !== 200) {
-            throw new Error('Failed to generate executive summary: ' + responseText);
-        }
-
-        const summary = JSON.parse(responseText);
-        console.log('Executive Summary: ' + JSON.stringify(summary)); // Log the summary
-        return summary;
-    } catch (error) {
-        console.log('Error sending transcript: ' + error.message);
-        throw new Error("Failed to send transcript to Gemini");
-    }
+            const summary = response.data;
+            console.log('Executive Summary:', JSON.stringify(summary)); // Log the summary
+            return summary;
+        })
+        .catch(error => {
+            console.log('Error sending transcript:', error.message);
+            throw new Error("Failed to send transcript to Gemini");
+        });
 }
 
 function processTranscript() {
