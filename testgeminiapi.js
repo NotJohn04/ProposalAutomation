@@ -30,17 +30,22 @@ function generateExecutiveSummary(transcript) {
     const options = {
         method: "post",
         contentType: "application/json",
-        payload: JSON.stringify(payload)
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true // Allows you to capture the full response even on error
     };
 
     try {
         const response = UrlFetchApp.fetch(url, options);
+        if (response.getResponseCode() !== 200) {
+            Logger.log('Error response: ' + response.getContentText());
+            throw new Error('Failed to generate executive summary');
+        }
         const summary = JSON.parse(response.getContentText()).summary;
         Logger.log('Executive Summary: ' + summary);
         return summary;
     } catch (error) {
-        Logger.log('Error generating summary: ' + error.message);
-        throw new Error("Failed to generate executive summary");
+        Logger.log('Error sending transcript: ' + error.message);
+        throw new Error("Failed to send transcript to Gemini");
     }
 }
 
