@@ -10,15 +10,19 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 app.post('/webhook', (req, res) => {
+    console.log('Received request:', req.body);
+
     const { transcript } = req.body;
     
     if (!transcript) {
+        console.log('No transcript provided');
         return res.status(400).json({ summary: "Please provide the data you would like me to summarize. I need the data to create a summary." });
     }
 
     // Example logic to create a summary
     const summary = generateExecutiveSummary(transcript); // Replace with actual summary logic
 
+    console.log('Generated summary:', summary);
     res.json({ summary });
 });
 
