@@ -36,15 +36,21 @@ function generateExecutiveSummary(transcript) {
 
     try {
         const response = UrlFetchApp.fetch(url, options);
-        if (response.getResponseCode() !== 200) {
-            Logger.log('Error response: ' + response.getContentText());
-            throw new Error('Failed to generate executive summary');
+        const responseCode = response.getResponseCode();
+        const responseText = response.getContentText();
+
+        console.log('Response Code: ' + responseCode);
+        console.log('Response Text: ' + responseText);
+
+        if (responseCode !== 200) {
+            throw new Error('Failed to generate executive summary: ' + responseText);
         }
-        const summary = JSON.parse(response.getContentText()).summary;
-        Logger.log('Executive Summary: ' + summary);
+
+        const summary = JSON.parse(responseText);
+        console.log('Executive Summary: ' + JSON.stringify(summary)); // Log the summary
         return summary;
     } catch (error) {
-        Logger.log('Error sending transcript: ' + error.message);
+        console.log('Error sending transcript: ' + error.message);
         throw new Error("Failed to send transcript to Gemini");
     }
 }
