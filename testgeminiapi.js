@@ -16,10 +16,39 @@ app.post('/webhook', (req, res) => {
     }
 
     // Example logic to create a summary
-    const summary = generateSummary(transcript); // Replace with actual summary logic
+    const summary = generateExecutiveSummary(transcript); // Replace with actual summary logic
 
     res.json({ summary });
 });
+
+function generateExecutiveSummary(transcript) {
+    const url = "https://proposal-automation.vercel.app/webhook"; // Your Gemini endpoint
+    const payload = {
+        prompt: transcript // Use the transcript as the prompt
+    };
+
+    const options = {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify(payload)
+    };
+
+    try {
+        const response = UrlFetchApp.fetch(url, options);
+        const summary = JSON.parse(response.getContentText()).summary;
+        Logger.log('Executive Summary: ' + summary);
+        return summary;
+    } catch (error) {
+        Logger.log('Error generating summary: ' + error.message);
+        throw new Error("Failed to generate executive summary");
+    }
+}
+
+function processTranscript() {
+    const transcript = testfindTranscript(); // Assuming this function returns the transcript
+    const summary = generateExecutiveSummary(transcript);
+    // Further processing of the summary if needed
+}
 
 function generateSummary(transcript) {
     // Split the transcript into sentences
