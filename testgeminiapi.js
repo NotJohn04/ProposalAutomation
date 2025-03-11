@@ -22,8 +22,42 @@ app.post('/webhook', (req, res) => {
 });
 
 function generateSummary(transcript) {
-    // Implement your summary generation logic here
-    return "This is a generated summary based on the transcript.";
+    // Split the transcript into sentences
+    const sentences = transcript.split('. ');
+
+    // Extract key sections
+    const introduction = extractIntroduction(sentences);
+    const keyPoints = extractKeyPoints(sentences);
+    const conclusion = extractConclusion(sentences);
+
+    // Construct the summary
+    const summary = `
+        Executive Summary:
+        ${introduction}
+
+        Key Points:
+        ${keyPoints.join('\n')}
+
+        Conclusion:
+        ${conclusion}
+    `;
+
+    return summary;
+}
+
+function extractIntroduction(sentences) {
+    // Extract the first few sentences as the introduction
+    return sentences.slice(0, 2).join('. ');
+}
+
+function extractKeyPoints(sentences) {
+    // Implement logic to identify and extract key points
+    return sentences.filter(sentence => sentence.includes('key') || sentence.includes('important'));
+}
+
+function extractConclusion(sentences) {
+    // Extract the last few sentences as the conclusion
+    return sentences.slice(-2).join('. ');
 }
 
 const PORT = process.env.PORT || 3000;
