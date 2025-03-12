@@ -36,6 +36,8 @@ app.post('/webhook', (req, res) => {
         Please ensure the executive summary does not exceed 3 paragraphs and 897 words.
         Focus more on the pain points and discuss the customer's situation rather than what we do.
         use concise language dont halucinate and use language with more depth, no fillers.
+        dont use bold or italic text no **words**.
+        just get straight to the point no bullet point no Executive Summary: just the summary.
         
     `;
 
