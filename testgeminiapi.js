@@ -31,8 +31,19 @@ app.post('/webhook', (req, res) => {
         return res.status(400).json({ summary: "Please provide the data you would like me to summarize. I need the data to create a summary." });
     }
 
+    // Predefined prompt to guide the AI
+    const predefinedPrompt = `
+        Please ensure the executive summary does not exceed 3 paragraphs and 897 words.
+        Focus more on the pain points and discuss the customer's situation rather than what we do.
+        use concise language dont halucinate and use language with more depth, no fillers.
+        
+    `;
+
+    // Combine the predefined prompt with the transcript
+    const fullPrompt = `${predefinedPrompt}\n\n${transcript}`;
+
     // Example logic to create a summary
-    generateExecutiveSummary(transcript)
+    generateExecutiveSummary(fullPrompt)
         .then(summary => {
             console.log('Generated summary:', summary);
             res.json({ summary });
@@ -58,50 +69,6 @@ async function generateExecutiveSummary(transcript) {
   }
 }
 
-function processTranscript() {
-    const transcript = testfindTranscript(); // Assuming this function returns the transcript
-    const summary = generateExecutiveSummary(transcript);
-    // Further processing of the summary if needed
-}
-
-function generateSummary(transcript) {
-    // Split the transcript into sentences
-    const sentences = transcript.split('. ');
-
-    // Extract key sections
-    const introduction = extractIntroduction(sentences);
-    const keyPoints = extractKeyPoints(sentences);
-    const conclusion = extractConclusion(sentences);
-
-    // Construct the summary
-    const summary = `
-        Executive Summary:
-        ${introduction}
-
-        Key Points:
-        ${keyPoints.join('\n')}
-
-        Conclusion:
-        ${conclusion}
-    `;
-
-    return summary;
-}
-
-function extractIntroduction(sentences) {
-    // Extract the first few sentences as the introduction
-    return sentences.slice(0, 2).join('. ');
-}
-
-function extractKeyPoints(sentences) {
-    // Implement logic to identify and extract key points
-    return sentences.filter(sentence => sentence.includes('key') || sentence.includes('important'));
-}
-
-function extractConclusion(sentences) {
-    // Extract the last few sentences as the conclusion
-    return sentences.slice(-2).join('. ');
-}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

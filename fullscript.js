@@ -4,6 +4,9 @@ function doPost(e) {
     // Extract relevant information from the webhook
     const leadName = data.full_name;
     const leadEmail = data.email;
+    const businessName = data.company_name || "Default Business Name";
+    const personOnPhone = data.first_name || "Contact Person";
+    const tag = data.customData.tag || "scaling"; // Default to scaling if no tag is provided
     const pdfLink = "https://drive.google.com/file/d/1wbfs-KkPDEgFsqBtmB0ppBy5P1SoDY3t/view";
     const sheetLink = "https://docs.google.com/spreadsheets/d/17jPEUpPhX1Ouv7CYB1puoSGq-LO_S8woyzDKkWRS5Hc/edit";
 
@@ -54,7 +57,7 @@ function doPost(e) {
     } else if (data.customData && data.customData.Remark === "reminder") {
         sendReminderEmail(leadName, leadEmail, date, time);
     } else if (data.customData && data.customData.Remark === "send proposal") {
-        sendProposalEmail(leadName, leadEmail, date, time);
+        handleSendProposal(leadName, leadEmail, businessName, personOnPhone, tag);
     }
     return ContentService.createTextOutput(JSON.stringify({ result: "success" }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -498,101 +501,21 @@ function sendReminderEmail(leadName, leadEmail, date, time) {
     }
 }
 
-function sendProposalEmail(leadName, leadEmail, date, time) {
+function sendProposalEmail(leadName, leadEmail, pdfFile) {
     const subject = "Skyvolt Solar | Your Custom Proposal";
     const htmlBody = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Skyvolt Solar | Your Custom Proposal</title>
-        <style>
-            body {
-                background-color: #FFFFFF;
-                padding: 20px;
-                font-family: Poppins, sans-serif;
-            }
-            .container {
-                background-color: #FFF7F2;
-                padding: 20px;
-                border-radius: 15px;
-                box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
-                width: 600px;
-                margin: 0 auto;
-            }
-            h2 {
-                color: #262423;
-                margin-bottom: 10px;
-            }
-            p, ul {
-                color: #262423;
-                font-size: 18px;
-            }
-            a {
-                color: #FF6100;
-            }
-            .button {
-                display: inline-block;
-                background-color: #FF6100;
-                color: #FFF7F2 !important;
-                padding: 14px 25px;
-                font-size: 18px;
-                text-decoration: none;
-                border-radius: 8px;
-                margin: 25px 0;
-                font-weight: bold;
-                box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
-            }
-            .footer {
-                color: #777;
-                font-size: 14px;
-                text-align: center;
-            }
-            .social-icons img {
-                width: 30px;
-                height: 30px;
-                margin: 0 10px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h2>Thank You for Joining Our Meeting</h2>
-            <p>Hi <b>${leadName}</b>,</p>
-            <p>Thank you for joining our meeting. Based on the pain points you mentioned, we have created a proposal for you. This proposal is automatically generated and is not finalized. If you think there are any changes that should be made, please let us know.</p>
-            <p>If the proposal below meets your expectations, you may sign it, and we can proceed to payment and start with an onboarding call to gather all necessary details.</p>
-            <p>Attached, you will find a video and our sales presentation slides for your reference.</p>
-            <p>You can view the sales presentation <a href="https://drive.google.com/file/d/1AQJ0mE5i2vXCkcZ7ynkGdWtKzYMtM6QL/view?usp=sharing" target="_blank">here</a>.</p>
-            <p>Looking forward to your feedback!</p>
-            <p>Best Regards,<br><strong>Skyvolt Solar Marketing Team</strong></p>
-        </div>
-    </body>
-    </html>
+    <p>Hi ${leadName},</p>
+    <p>Thank you for joining our meeting. Based on the pain points you mentioned, we have created a proposal for you. This proposal is automatically generated and is not finalized. If you think there are any changes that should be made, please let us know.</p>
+    <p>Looking forward to your feedback!</p>
+    <p>Best Regards,<br><strong>Skyvolt Solar Marketing Team</strong></p>
     `;
 
-    
-    const presentationFileId = '1iqB0NvqFZ87P5-Orm_DUAhSFihQc4tag';
+    GmailApp.sendEmail(leadEmail, subject, '', {
+        htmlBody: htmlBody,
+        attachments: [pdfFile]
+    });
 
-    try {
-        // Retrieve the video and presentation files from Google Drive
-        
-        const presentationFile = DriveApp.getFileById(presentationFileId);
-
-        // Send the email with the attachments
-        GmailApp.sendEmail(leadEmail, subject, '', {
-            htmlBody: htmlBody,
-            attachments: [
-                
-                presentationFile.getBlob()
-            ]
-        });
-
-        // Log after sending the email
-        Logger.log('Proposal email sent successfully to: ' + leadEmail);
-    } catch (error) {
-        Logger.log('Error retrieving files or sending email: ' + error.message);
-    }
+    Logger.log('Proposal email sent successfully to: ' + leadEmail);
 }
 
 function sendFollowUpEmail(leadName, leadEmail) {
@@ -622,25 +545,25 @@ function sendFollowUpEmail(leadName, leadEmail) {
     }
 }
 
-   function testWebhook() {
-     var url = "https://proposal-automation.vercel.app/webhook";
-     var payload = {
-       key: "value" // Replace with your actual data
-     };
+  //  function testWebhook() {
+  //    var url = "https://proposal-automation.vercel.app/webhook";
+  //    var payload = {
+  //      key: "value" // Replace with your actual data
+  //    };
      
-     var options = {
-       method: "post",
-       contentType: "application/json",
-       payload: JSON.stringify(payload)
-     };
+  //    var options = {
+  //      method: "post",
+  //      contentType: "application/json",
+  //      payload: JSON.stringify(payload)
+  //    };
      
-     try {
-       var response = UrlFetchApp.fetch(url, options);
-       Logger.log(response.getContentText());
-     } catch (e) {
-       Logger.log("Error: " + e.toString());
-     }
-   }
+  //    try {
+  //      var response = UrlFetchApp.fetch(url, options);
+  //      Logger.log(response.getContentText());
+  //    } catch (e) {
+  //      Logger.log("Error: " + e.toString());
+  //    }
+  //  }
 
 
 function findTranscript(leadName) {
@@ -654,6 +577,7 @@ function findTranscript(leadName) {
   }
   throw new Error("Transcript not found");
 }
+
 function test() {
   const folders = DriveApp.getFoldersByName("Meet Recordings");
   if (folders.hasNext()) {
@@ -664,27 +588,169 @@ function test() {
     Logger.log('Folder not found');
   }
 }
+function testfindTranscript() {
+    try {
+        const folders = DriveApp.getFoldersByName("Meet Recordings");
+        if (!folders.hasNext()) {
+            throw new Error("Meet Recordings folder not found");
+        }
+        
+        const folder = folders.next();
+        const files = folder.getFiles();
+        let fileId = null;
 
-   function testfindTranscript() {
-       const folder = DriveApp.getFoldersByName("Meet Recordings").next();
-       const files = folder.getFiles();
-       const leadName = "Thamkingjoe";
-       while (files.hasNext()) {
-           const file = files.next();
-           Logger.log('Checking file: ' + file.getName());
-           Logger.log('File MIME type: ' + file.getMimeType());
-           if (file.getName().includes(leadName) && file.getMimeType() === MimeType.GOOGLE_DOCS) {
-               Logger.log('Found Google Doc: ' + file.getName());
-               try {
-                   const fileId = file.getId();
-                   Logger.log('File ID: ' + fileId);
-                   const fileContent = file.getBlob().getDataAsString();
-                   return fileContent;
-               } catch (error) {
-                   Logger.log('Error retrieving document content: ' + error.message);
-                   throw new Error("Failed to retrieve Google Document content");
-               }
-           }
-       }
-       throw new Error("Transcript not found or not a Google Document");
-   }
+        while (files.hasNext()) {
+            const file = files.next();
+            if (file.getName().includes("jut-vxmj-cjw") && file.getMimeType() === MimeType.GOOGLE_DOCS) {
+                fileId = file.getId();
+                Logger.log("Found Google Doc with ID: " + fileId);
+                break;
+            }
+        }
+
+        if (fileId) {
+            const document = DocumentApp.openById(fileId);
+            const transcript = document.getBody().getText();
+            sendTranscriptToGemini(transcript);
+        } else {
+            Logger.log("No Google Doc found with 'jut-vxmj-cjw' in the name.");
+        }
+    } catch (error) {
+        Logger.log('Error: ' + error.message);
+    }
+}
+
+function sendTranscriptToGemini(transcript) {
+    try {
+        const response = UrlFetchApp.fetch("https://proposal-automation.vercel.app/webhook", {
+            method: "post",
+            contentType: "application/json",
+            payload: JSON.stringify({ transcript: transcript })
+        });
+
+        const summarizedInformation = JSON.parse(response.getContentText()).summary;
+        Logger.log('Transcript sent successfully. Received summary: ' + summarizedInformation);
+
+        parseInformationToGoogleDoc(summarizedInformation);
+    } catch (error) {
+        Logger.log('Error sending transcript: ' + error.message);
+        throw new Error("Failed to send transcript to Gemini");
+    }
+}
+
+function parseInformationToGoogleDoc(executiveSummary) {
+    try {
+        const fileId = '1AtBw07UvWvvledalCt7iJfHA4aLZWxltnI2w-7JGyjc'; // Use the specific file ID
+        const doc = DocumentApp.openById(fileId);
+        const body = doc.getBody();
+        
+        // Hardcoded information for testing
+        const businessName = "Skyvolt Solar";
+        const personOnPhone = "John Doe";
+
+        // Replace placeholder fields
+        body.replaceText('{{Business Name}}', businessName);
+        body.replaceText('{{Person On Phone}}', personOnPhone);
+        body.replaceText('{{Executive Summary}}', executiveSummary);
+
+        Logger.log('Information successfully added to the document.');
+    } catch (error) {
+        Logger.log('Error updating document: ' + error.message);
+        throw new Error("Failed to update Google Document");
+    }
+}
+
+function handleSendProposal(leadName, leadEmail, businessName, personOnPhone, tag) {
+    const transcript = findTranscriptWithRetry(leadName);
+    if (transcript) {
+        const executiveSummary = generateExecutiveSummary(transcript);
+        generateProposal(leadName, leadEmail, businessName, personOnPhone, executiveSummary, tag);
+    } else {
+        Logger.log("Transcript not found after retries.");
+    }
+}
+
+function findTranscriptWithRetry(leadName) {
+    let attempts = 0;
+    const maxAttempts = 3;
+    const waitTime = 15 * 60 * 1000; // 15 minutes
+
+    while (attempts < maxAttempts) {
+        const transcript = findTranscript(leadName);
+        if (transcript) {
+            return transcript;
+        }
+        Utilities.sleep(waitTime);
+        attempts++;
+    }
+    return null;
+}
+
+function findTranscript(leadName) {
+    const folders = DriveApp.getFoldersByName("Meet Recordings");
+    if (!folders.hasNext()) {
+        Logger.log("Meet Recordings folder not found");
+        return null;
+    }
+
+    const folder = folders.next();
+    const files = folder.getFiles();
+    while (files.hasNext()) {
+        const file = files.next();
+        if (file.getName().includes(leadName) && file.getMimeType() === MimeType.GOOGLE_DOCS) {
+            const document = DocumentApp.openById(file.getId());
+            return document.getBody().getText();
+        }
+    }
+    return null;
+}
+
+function generateExecutiveSummary(transcript) {
+    // Use AI model to generate executive summary from transcript
+    // Placeholder for AI integration
+    return "Generated Executive Summary based on transcript.";
+}
+
+function generateProposal(leadName, leadEmail, businessName, personOnPhone, executiveSummary, tag) {
+    const docId = getProposalIdByTag(tag);
+    const doc = DocumentApp.openById(docId);
+    const body = doc.getBody();
+
+    // Replace placeholder fields
+    body.replaceText('{{Business Name}}', businessName);
+    body.replaceText('{{Person On Phone}}', personOnPhone);
+    body.replaceText('{{Executive Summary}}', executiveSummary);
+
+    // Add additional information based on tag
+    addTagSpecificContent(body, tag);
+
+    doc.saveAndClose();
+
+    // Convert to PDF and send email
+    const pdfFile = DriveApp.getFileById(docId).getAs(MimeType.PDF);
+    sendProposalEmail(leadName, leadEmail, pdfFile);
+}
+
+function getProposalIdByTag(tag) {
+    const proposalIds = {
+        "scaling": "1AtBw07UvWvvledalCt7iJfHA4aLZWxltnI2w-7JGyjc",
+        "lead_generation": "ID_FOR_LEAD_GENERATION",
+        "automation": "ID_FOR_AUTOMATION",
+        "follow_up": "ID_FOR_FOLLOW_UP",
+        "ai": "ID_FOR_AI"
+    };
+    return proposalIds[tag] || proposalIds["scaling"];
+}
+
+function addTagSpecificContent(body, tag) {
+    // Add content specific to the tag
+    if (tag === "lead_generation") {
+        body.appendParagraph("Lead Generation Specific Content");
+    } else if (tag === "automation") {
+        body.appendParagraph("Automation Specific Content");
+    }
+    // Add more conditions as needed
+}
+
+// Example usage
+
